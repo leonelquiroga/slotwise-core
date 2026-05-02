@@ -1,108 +1,110 @@
-# NutriCore
+# Slotwise
 
-**Plataforma SaaS de gestión integral para nutricionistas.**  
-Agenda · Fichas clínicas · Sesiones con IA · Automatizaciones
+**Open-source core of a SaaS platform for service professionals.**  
+Appointments · Client records · AI-assisted sessions · Payments · Automations
 
 ![Stack](https://img.shields.io/badge/Next.js_14-black?style=flat-square&logo=next.js)
 ![Stack](https://img.shields.io/badge/NestJS-E0234E?style=flat-square&logo=nestjs&logoColor=white)
 ![Stack](https://img.shields.io/badge/TypeScript-3178C6?style=flat-square&logo=typescript&logoColor=white)
 ![Stack](https://img.shields.io/badge/PostgreSQL-4169E1?style=flat-square&logo=postgresql&logoColor=white)
 ![Stack](https://img.shields.io/badge/Prisma-2D3748?style=flat-square&logo=prisma&logoColor=white)
-![Status](https://img.shields.io/badge/status-en_desarrollo-orange?style=flat-square)
+![Status](https://img.shields.io/badge/status-in_development-orange?style=flat-square)
 
 ---
 
-## ¿Qué es NutriCore?
+## What is Slotwise?
 
-NutriCore digitaliza y automatiza el flujo completo de trabajo de un profesional de la nutrición:
+Slotwise is a white-label SaaS platform for any professional who works by appointment.  
+A nutritionist, a psychologist, a personal trainer, a veterinarian, a dog groomer — any service-based business that needs to manage clients, schedule sessions, collect payments, and keep structured records.
 
-- El paciente completa su ficha clínica desde un formulario web
-- Agenda su turno y realiza el pago online
-- El nutricionista recibe un dashboard antes de cada sesión con la ficha completa y una sugerencia preliminar generada por IA
-- Durante la consulta puede tomar notas en tiempo real que se guardan automáticamente
-- Al finalizar, el sistema envía confirmaciones, actualiza el historial y genera el resumen de evolución
+The platform adapts to each business through configuration, not code changes.
+
+**Core workflow:**
+
+1. Client fills in their intake form (fields are configurable per business type)
+2. Client books a slot and pays online
+3. Professional receives a pre-session dashboard with the complete client file and an AI-generated context summary
+4. Notes taken during the session are auto-saved in real time
+5. Post-session: payment is logged, invoicing automation triggered, client record updated
 
 ---
 
 ## Stack
 
-| Capa | Tecnología |
+| Layer | Technology |
 |---|---|
 | Frontend | Next.js 14 (App Router) + TypeScript |
 | Backend | NestJS + TypeScript |
-| Base de datos | PostgreSQL + Prisma ORM |
+| Database | PostgreSQL + Prisma ORM |
 | Auth | NextAuth.js + JWT |
-| Tiempo real | WebSockets (NestJS Gateway) |
-| IA | Claude API (Anthropic) |
-| Mobile (Fase 4) | React Native + Expo |
+| Real-time | WebSockets (NestJS Gateway) |
+| AI | Claude API (Anthropic) |
+| Mobile (Phase 4) | React Native + Expo |
 
 ---
 
-## Estructura del proyecto
+## Architecture
+
+Slotwise is a **pnpm monorepo** managed with Turborepo:
 
 ```
-nutri-platform-core/
+slotwise-core/
 ├── apps/
-│   ├── web/                    # Next.js — interfaz nutricionista y pacientes
-│   │   ├── app/
-│   │   │   ├── (auth)/         # login, registro
-│   │   │   ├── dashboard/      # panel principal
-│   │   │   ├── patients/       # gestión de pacientes
-│   │   │   ├── appointments/   # agenda
-│   │   │   └── sessions/[id]/  # dashboard sesión en vivo
-│   │   └── components/
-│   └── api/                    # NestJS — API REST + WebSocket
+│   ├── web/                      # Next.js — professional portal + client portal
+│   │   └── app/
+│   │       ├── (auth)/           # login, register, onboarding
+│   │       ├── dashboard/        # main panel
+│   │       ├── clients/          # client management
+│   │       ├── appointments/     # calendar and scheduling
+│   │       └── sessions/[id]/    # live session dashboard
+│   └── api/                      # NestJS — REST API + WebSocket
 │       └── src/
 │           └── modules/
-│               ├── auth/
-│               ├── patients/
-│               ├── appointments/
-│               ├── sessions/
-│               └── ai/
+│               ├── auth/         # JWT, guards, strategies
+│               ├── tenants/      # multi-tenancy, business config
+│               ├── clients/      # client records (replaces "patients")
+│               ├── appointments/ # scheduling logic
+│               ├── sessions/     # live session, notes, WebSocket
+│               └── ai/           # Claude API integration
 ├── packages/
-│   ├── database/               # Prisma schema + migraciones
-│   └── shared/                 # DTOs y tipos compartidos
+│   ├── database/                 # Prisma schema + migrations
+│   └── shared/                   # DTOs, types, constants
 └── turbo.json
 ```
 
----
+### Module pattern
 
-## Módulos principales
-
-### Patients
-CRUD completo de pacientes. Historial médico estructurado, antecedentes, objetivos del tratamiento y evolución por período.
-
-### Appointments
-Agenda de turnos con manejo de disponibilidad. Integración con Google Calendar para sincronización automática de eventos y generación de links de reunión.
-
-### Sessions (dashboard en vivo)
-Panel que el nutricionista abre antes de cada consulta. Muestra la ficha del paciente, el historial de sesiones anteriores y la sugerencia preliminar de IA. Permite tomar notas con auto-guardado via WebSocket.
-
-### AI
-Módulo que recibe la ficha del paciente y construye un prompt estructurado para el modelo. Devuelve sugerencias clínicas preliminares como contexto de apoyo. La decisión profesional siempre la toma el nutricionista.
-
----
-
-## Arquitectura de un módulo
-
-Cada módulo sigue el patrón Controller → Service → Repository:
+Every NestJS module follows a strict Controller → Service → Repository layering:
 
 ```
-patients/
+clients/
 ├── dto/
-│   ├── create-patient.dto.ts   # Validación de entrada con class-validator
-│   └── update-patient.dto.ts
-├── patients.controller.ts      # Solo recibe HTTP y delega al service
-├── patients.service.ts         # Lógica de negocio
-├── patients.repository.ts      # Acceso a datos — encapsula Prisma
-└── patients.module.ts
+│   ├── create-client.dto.ts     # Input validation (class-validator)
+│   └── update-client.dto.ts
+├── clients.controller.ts        # HTTP layer — receives, delegates, responds
+├── clients.service.ts           # Business logic — no HTTP knowledge
+├── clients.repository.ts        # Data access — encapsulates Prisma
+└── clients.module.ts
 ```
 
 ---
 
-## Cómo correr el proyecto localmente
+## Multi-tenancy
 
-### Requisitos
+Each registered business is a **Tenant**. The Tenant has a `businessType` that controls:
+
+- Labels shown in the UI ("Patient" vs "Client" vs "Pet owner")
+- Fields available in the intake form (configurable JSON schema)
+- Default session duration
+- Which features are enabled (AI summary, payments, automations)
+
+This means the same codebase serves a nutritionist and a dog grooming salon without a single `if` in the domain logic.
+
+---
+
+## Running locally
+
+### Requirements
 
 - Node.js 20+
 - PostgreSQL 15+
@@ -111,51 +113,47 @@ patients/
 ### Setup
 
 ```bash
-# Clonar el repo
-git clone https://github.com/leonelquiroga/nutri-platform-core.git
-cd nutri-platform-core
+git clone https://github.com/leonelquiroga/slotwise-core.git
+cd slotwise-core
 
-# Instalar dependencias
 pnpm install
 
-# Configurar variables de entorno
 cp apps/api/.env.example apps/api/.env
 cp apps/web/.env.example apps/web/.env
-# Completar los valores en ambos archivos
+# Fill in the values
 
-# Crear la base de datos y correr migraciones
 pnpm db:migrate
+pnpm db:seed     # optional — loads demo data
 
-# Seed de datos de desarrollo (opcional)
-pnpm db:seed
-
-# Levantar todos los servicios
 pnpm dev
 ```
 
-Los servicios quedan disponibles en:
-- Web: `http://localhost:3000`
-- API: `http://localhost:3001`
-- Prisma Studio: `http://localhost:5555` (con `pnpm db:studio`)
+| Service | URL |
+|---|---|
+| Web | http://localhost:3000 |
+| API | http://localhost:3001 |
+| Prisma Studio | http://localhost:5555 (`pnpm db:studio`) |
 
 ---
 
-## Variables de entorno
+## Environment variables
 
 **API** (`apps/api/.env.example`):
+
 ```env
-DATABASE_URL=postgresql://user:password@localhost:5432/nutricore
-JWT_SECRET=your-secret-here
-JWT_REFRESH_SECRET=your-refresh-secret-here
-ANTHROPIC_API_KEY=your-key-here
+DATABASE_URL=postgresql://user:password@localhost:5432/slotwise
+JWT_SECRET=
+JWT_REFRESH_SECRET=
+ANTHROPIC_API_KEY=
 GOOGLE_CLIENT_ID=
 GOOGLE_CLIENT_SECRET=
 ```
 
 **Web** (`apps/web/.env.example`):
+
 ```env
 NEXTAUTH_URL=http://localhost:3000
-NEXTAUTH_SECRET=your-secret-here
+NEXTAUTH_SECRET=
 NEXT_PUBLIC_API_URL=http://localhost:3001
 ```
 
@@ -163,27 +161,27 @@ NEXT_PUBLIC_API_URL=http://localhost:3001
 
 ## Roadmap
 
-- [x] Especificación técnica y arquitectura
-- [ ] Setup monorepo (Turborepo + pnpm workspaces)
-- [ ] Schema Prisma + migraciones base
-- [ ] Módulo Auth (JWT + NextAuth)
-- [ ] Módulo Patients (CRUD)
-- [ ] Dashboard de sesión en vivo
-- [ ] WebSocket auto-save de notas
-- [ ] Módulo Appointments + disponibilidad
-- [ ] Integración Google Calendar
-- [ ] Módulo AI con Claude API
-- [ ] React Native app (Fase 4)
+- [x] Technical specification and architecture design
+- [x] Public repository setup
+- [ ] Monorepo scaffold (Turborepo + pnpm workspaces)
+- [ ] Prisma schema + base migrations
+- [ ] Auth module (JWT + NextAuth)
+- [ ] Tenants module (multi-tenancy, business config)
+- [ ] Clients module (CRUD + configurable fields)
+- [ ] Appointments module (scheduling + availability)
+- [ ] Live session dashboard (WebSocket auto-save)
+- [ ] AI module (Claude API integration)
+- [ ] React Native app (Phase 4)
 
 ---
 
-## Contexto del proyecto
+## About this repository
 
-Este repositorio es la versión open source del core de NutriCore. Muestra la arquitectura y los módulos principales del sistema. Las integraciones de pagos, automatizaciones AFIP y configuraciones de producción viven en el repositorio privado del cliente.
+This is the open-source core of Slotwise. It covers the main architectural modules and patterns. Payment integrations, invoicing automations, and production configuration live in the private repository.
 
 ---
 
-## Autor
+## Author
 
 **Leonel Quiroga** — Full Stack Engineer  
 [github.com/leonelquiroga](https://github.com/leonelquiroga) · [linkedin.com/in/leonelquiroga](https://linkedin.com/in/leonelquiroga) · dev.leonelquiroga@gmail.com
