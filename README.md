@@ -184,4 +184,4 @@ This is the open-source core of Slotwise. It covers the main architectural modul
 ## Author
 
 **Leonel Quiroga** — Full Stack Engineer  
-[github.com/leonelquiroga](https://github.com/leonelquiroga) · [linkedin.com/in/leonelquiroga](https://linkedin.com/in/leonelquiroga) · dev.leonelquiroga@gmail.com
+[github.com/leonelquiroga](https://github.com/leonelquiroga) · [linkedin.com/in/leonelquiroga](https://linkedin.com/in/leonelquiroga) · leonelquiroga.dev@gmail.com
